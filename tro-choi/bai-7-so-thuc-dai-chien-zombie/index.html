@@ -1,0 +1,1063 @@
+<title>Số Thực Đại Chiến Zombie</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;600;700&display=swap">
+<style>
+/* Layout: wooden seed-bar on top, the lawn canvas as the stage, overlays for menu / quiz / results.
+   Single deliberate look (a sunny back garden), so colors are set explicitly rather than per theme. */
+:root {
+  --sky: #cfe9f5;
+  --sky-deep: #9fd0e6;
+  --wood: #7a4a24;
+  --wood-dark: #5a3418;
+  --wood-light: #a8703f;
+  --paper: #fff8e3;
+  --ink: #2b2113;
+  --ink-soft: #5e4b33;
+  --sun: #ffc928;
+  --q: #2f9a3c;
+  --q-dark: #1f6e2a;
+  --i: #7d43c2;
+  --i-dark: #57278f;
+  --danger: #d2432a;
+  --ok: #2f9a3c;
+  --font-display: "Baloo 2", "Be Vietnam Pro", system-ui, sans-serif;
+  --font-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-math: "Cambria Math", "STIX Two Math", "Noto Sans Math", "Segoe UI Symbol", "Be Vietnam Pro", serif;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body {
+  background: linear-gradient(180deg, var(--sky) 0%, var(--sky-deep) 100%);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px;
+  box-sizing: border-box;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+
+.app { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- top bar ---------- */
+.bar {
+  display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px;
+  background: var(--wood);
+  border: 3px solid var(--wood-dark);
+  border-radius: 14px;
+  padding: 8px;
+  box-shadow: inset 0 2px 0 var(--wood-light);
+}
+.sunbox {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 78px; padding: 4px 8px;
+  background: var(--wood-dark); border-radius: 10px; color: var(--paper);
+}
+.sunbox .ic { width: 30px; height: 30px; }
+.sunbox b { font-family: var(--font-display); font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; }
+.cards { display: flex; gap: 6px; flex-wrap: wrap; flex: 1 1 auto; min-width: 0; }
+.card {
+  position: relative; width: 84px; padding: 4px 4px 3px;
+  background: var(--paper); border: 2px solid var(--wood-dark); border-radius: 9px;
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  overflow: hidden;
+}
+.card canvas { width: 56px; height: 56px; }
+.card .nm { font-size: 11px; font-weight: 700; line-height: 1.15; text-align: center; min-height: 26px; display: flex; align-items: center; }
+.card .cost { font-family: var(--font-display); font-size: 15px; line-height: 1; display: flex; align-items: center; gap: 3px; font-variant-numeric: tabular-nums; }
+.card .cost i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--sun); box-shadow: 0 0 0 2px #f39b16 inset; }
+.card .key { position: absolute; top: 2px; left: 5px; font-size: 10px; color: var(--ink-soft); font-weight: 700; }
+.card .cd { position: absolute; left: 0; right: 0; top: 0; background: rgba(43, 33, 19, .55); pointer-events: none; }
+.card[aria-pressed="true"] { border-color: var(--sun); box-shadow: 0 0 0 3px var(--sun); transform: translateY(-2px); }
+.card.poor { filter: grayscale(.7) brightness(.85); }
+.card.q { border-bottom: 6px solid var(--q); }
+.card.i { border-bottom: 6px solid var(--i); }
+.tools { display: flex; gap: 6px; align-items: stretch; flex-wrap: wrap; }
+.tool {
+  background: var(--wood-dark); color: var(--paper); border: 2px solid var(--wood-light);
+  border-radius: 9px; padding: 6px 10px; font-weight: 700; font-size: 13px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 70px;
+}
+.tool small { font-weight: 600; font-size: 11px; opacity: .85; }
+.tool[aria-pressed="true"] { background: var(--sun); color: var(--ink); border-color: var(--paper); }
+.tool:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ---------- stage ---------- */
+.stage { position: relative; width: 100%; aspect-ratio: 1000 / 580; max-width: 100%; border-radius: 14px; overflow: hidden; border: 3px solid var(--wood-dark); background: #6fb43f; }
+#game { width: 100%; height: 100%; display: block; touch-action: manipulation; }
+.hud { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; font-weight: 600; color: var(--ink); }
+.prog { flex: 1 1 260px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.prog .track { flex: 1; height: 14px; background: var(--paper); border: 2px solid var(--wood-dark); border-radius: 8px; overflow: hidden; }
+.prog .fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--q), var(--i)); transition: width .3s; }
+.prog span { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--ink-soft); }
+.legend b { color: var(--ink); }
+.rotate-hint { display: none; font-size: 13px; background: var(--paper); border: 2px dashed var(--wood-light); border-radius: 10px; padding: 6px 10px; }
+@media (max-width: 640px) and (orientation: portrait) { .rotate-hint { display: block; } }
+
+/* ---------- overlays ---------- */
+.ov {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(30, 40, 20, .55); padding: 12px; z-index: 5;
+}
+.panel {
+  background: var(--paper); border: 4px solid var(--wood-dark); border-radius: 18px;
+  box-shadow: 0 6px 0 var(--wood-dark);
+  max-width: 760px; width: 100%; max-height: 100%; overflow: auto;
+  padding: 18px 20px;
+}
+.panel h1, .panel h2 { font-family: var(--font-display); margin: 0; line-height: 1.05; text-wrap: balance; }
+.panel h1 { font-size: clamp(26px, 4.4vw, 44px); color: var(--wood-dark); }
+.panel h1 em { font-style: normal; color: var(--q); }
+.panel h1 em + em { color: var(--i); }
+.panel h2 { font-size: clamp(22px, 3.4vw, 32px); color: var(--wood-dark); }
+.panel p { margin: 6px 0; line-height: 1.5; max-width: 65ch; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+.levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin: 12px 0; }
+.lv {
+  text-align: left; background: #fff; border: 3px solid var(--wood-light); border-radius: 14px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.lv:hover { border-color: var(--wood-dark); transform: translateY(-2px); }
+.lv .t { font-family: var(--font-display); font-size: 20px; line-height: 1.1; color: var(--wood-dark); }
+.lv .d { font-size: 13px; color: var(--ink-soft); line-height: 1.4; }
+.lv .ex { font-family: var(--font-math); font-size: 15px; color: var(--ink); }
+.lv .stars { color: #e7a50b; font-size: 18px; letter-spacing: 2px; }
+.guide { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px 16px; font-size: 13.5px; line-height: 1.45; }
+.guide div { display: flex; gap: 8px; align-items: flex-start; }
+.guide canvas { width: 40px; height: 40px; flex: none; }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-weight: 700; color: #fff; font-family: var(--font-math); }
+.chip.q { background: var(--q); }
+.chip.i { background: var(--i); }
+.btn {
+  background: var(--q); color: #fff; border: 0; border-radius: 12px; padding: 10px 18px;
+  font-family: var(--font-display); font-size: 19px; box-shadow: 0 4px 0 var(--q-dark);
+}
+.btn.alt { background: var(--wood-light); box-shadow: 0 4px 0 var(--wood-dark); }
+.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--q-dark); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+
+.quiz .q { font-family: var(--font-math); font-size: clamp(20px, 3vw, 28px); font-weight: 700; margin: 8px 0 12px; line-height: 1.3; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+.opt {
+  background: #fff; border: 3px solid var(--wood-light); border-radius: 12px; padding: 10px 12px;
+  font-family: var(--font-math); font-size: 19px; font-weight: 700; text-align: left;
+}
+.opt:hover:not(:disabled) { border-color: var(--wood-dark); }
+.opt.right { background: #e3f6e3; border-color: var(--ok); }
+.opt.wrong { background: #fbe3dc; border-color: var(--danger); }
+.feedback { margin-top: 10px; padding: 8px 12px; border-radius: 10px; font-weight: 600; line-height: 1.45; }
+.feedback.good { background: #e3f6e3; color: var(--q-dark); }
+.feedback.bad { background: #fbe3dc; color: #8a2a17; }
+
+.result .big { font-family: var(--font-display); font-size: 40px; color: #e7a50b; letter-spacing: 4px; line-height: 1; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 10px 0; }
+.stat { background: #fff; border: 2px solid var(--wood-light); border-radius: 10px; padding: 6px 10px; }
+.stat b { display: block; font-family: var(--font-display); font-size: 24px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--ink-soft); }
+.lst { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.lst li { display: flex; gap: 8px; align-items: baseline; font-size: 14px; line-height: 1.4; }
+.lst .num { font-family: var(--font-math); font-weight: 700; min-width: 92px; }
+.notebook { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.notebook .chip { font-size: 14px; }
+h3 { font-family: var(--font-display); font-size: 19px; margin: 12px 0 2px; color: var(--wood-dark); }
+
+@media (max-width: 720px) {
+  .ov { position: fixed; inset: 0; z-index: 20; padding: max(12px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); }
+  .card { width: calc(25% - 5px); min-width: 64px; }
+  .card canvas { width: 46px; height: 46px; }
+  .sunbox { min-width: 64px; }
+  .tool { min-width: 0; flex: 1 1 auto; padding: 5px 8px; }
+  .tools { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .lv:hover, .card[aria-pressed="true"] { transform: none; } }
+</style>
+
+<div class="app">
+  <div class="bar" role="toolbar" aria-label="Chọn cây để trồng">
+    <div class="sunbox" title="Nắng dùng để mua cây">
+      <canvas class="ic" id="sunIcon" width="60" height="60" aria-hidden="true"></canvas>
+      <b id="sunVal">150</b>
+    </div>
+    <div class="cards" id="cards"></div>
+    <div class="tools">
+      <button class="tool" id="shovelBtn" aria-pressed="false" title="Nhổ cây (phím X)">Xẻng<small>nhổ cây · X</small></button>
+      <button class="tool" id="riddleBtn" title="Trả lời đúng để nhận thêm nắng">Giải đố<small id="riddleSub">+50 nắng</small></button>
+      <button class="tool" id="pauseBtn" title="Tạm dừng (phím P)">Tạm dừng<small>phím P</small></button>
+      <button class="tool" id="soundBtn" aria-pressed="true" title="Bật/tắt âm thanh">Âm thanh<small id="soundSub">đang bật</small></button>
+      <button class="tool" id="menuBtn" title="Về màn hình chọn màn">Chọn màn<small>menu</small></button>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="game" aria-label="Bãi cỏ: 5 làn, zombie mang biển số đi từ phải sang trái"></canvas>
+
+    <div class="ov" id="menuOv">
+      <div class="panel">
+        <div class="eyebrow">Toán 7 · Kết nối tri thức · Bài 7 Tập hợp các số thực</div>
+        <h1><em>Số Hữu Tỉ</em> &amp; <em>Số Vô Tỉ</em><br>đại chiến Zombie</h1>
+        <p>Đàn zombie mang biển số đang kéo vào vườn. <b>Đậu ℚ</b> chỉ bắn hạ zombie mang <span class="chip q">số hữu tỉ</span>,
+          <b>Đậu 𝕀</b> chỉ bắn hạ zombie mang <span class="chip i">số vô tỉ</span>. Đọc biển số, trồng đúng cây vào đúng làn!</p>
+        <div class="levels" id="levels"></div>
+        <div class="guide" id="guide"></div>
+        <p style="font-size:13px;color:var(--ink-soft)">Cách chơi: nhấn một thẻ cây rồi nhấn vào ô cỏ để trồng. Nhấn vào mặt trời để nhặt nắng.
+          Đạn bắn nhầm loại sẽ xuyên qua zombie. Phím tắt: 1–4 chọn cây, X xẻng, P tạm dừng.</p>
+      </div>
+    </div>
+
+    <div class="ov" id="quizOv" hidden>
+      <div class="panel quiz" role="dialog" aria-modal="true" aria-labelledby="quizTitle">
+        <div class="eyebrow" id="quizEyebrow">Câu hỏi</div>
+        <h2 id="quizTitle">Giáo sư Zombie hỏi</h2>
+        <div class="q" id="quizQ"></div>
+        <div class="opts" id="quizOpts"></div>
+        <div class="feedback" id="quizFb" hidden></div>
+        <div class="row" id="quizRow" hidden><button class="btn" id="quizGo">Tiếp tục chiến đấu</button></div>
+      </div>
+    </div>
+
+    <div class="ov" id="pauseOv" hidden>
+      <div class="panel" style="max-width:420px;text-align:center">
+        <h2>Đang tạm dừng</h2>
+        <p>Thầy cô có thể giảng bài, rồi nhấn tiếp tục.</p>
+        <div class="row" style="justify-content:center"><button class="btn" id="resumeBtn">Tiếp tục</button></div>
+      </div>
+    </div>
+
+    <div class="ov" id="endOv" hidden>
+      <div class="panel result" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+        <div class="eyebrow" id="endEyebrow"></div>
+        <h2 id="endTitle"></h2>
+        <div class="big" id="endStars"></div>
+        <p id="endMsg"></p>
+        <div class="stats" id="endStats"></div>
+        <div id="endConfused"></div>
+        <h3>Sổ tay số thực</h3>
+        <p style="font-size:13px;color:var(--ink-soft);margin:0">Các số em đã gặp trong màn này:</p>
+        <div class="notebook" id="endNotebook"></div>
+        <div class="row">
+          <button class="btn" id="againBtn">Chơi lại</button>
+          <button class="btn alt" id="nextBtn">Màn tiếp theo</button>
+          <button class="btn alt" id="toMenuBtn">Chọn màn</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hud">
+    <div class="prog"><span id="lvName">Màn 1</span><div class="track"><div class="fill" id="progFill"></div></div><span id="progTxt">0/0 zombie</span></div>
+    <div class="legend"><span><b>ℚ</b> số hữu tỉ: viết được dạng a/b (a, b ∈ ℤ, b ≠ 0)</span><span><b>𝕀</b> số vô tỉ: thập phân vô hạn không tuần hoàn</span></div>
+    <div class="rotate-hint">Xoay ngang điện thoại để bãi cỏ to hơn.</div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* =========================================================
+   1. NỘI DUNG TOÁN HỌC (lấy từ SGK Toán 7 tập một, Bài 5–7)
+   ========================================================= */
+// t: "Q" = số hữu tỉ, "I" = số vô tỉ
+const BANK_BASIC = [
+  { s: "3/4", t: "Q", why: "3/4 là phân số nên là số hữu tỉ" },
+  { s: "−7", t: "Q", why: "−7 = −7/1 nên là số hữu tỉ" },
+  { s: "0,5", t: "Q", why: "0,5 là số thập phân hữu hạn → hữu tỉ" },
+  { s: "−4/7", t: "Q", why: "−4/7 là phân số → hữu tỉ" },
+  { s: "0", t: "Q", why: "0 = 0/1 là số hữu tỉ" },
+  { s: "−2,(3)", t: "Q", why: "Vô hạn tuần hoàn (chu kì 3) → hữu tỉ" },
+  { s: "1,(54)", t: "Q", why: "Vô hạn tuần hoàn (chu kì 54) → hữu tỉ" },
+  { s: "0,2(7)", t: "Q", why: "0,2(7) = 5/18 → hữu tỉ" },
+  { s: "−6,725", t: "Q", why: "Thập phân hữu hạn → hữu tỉ" },
+  { s: "2 1/3", t: "Q", why: "Hỗn số 2 1/3 = 7/3 → hữu tỉ" },
+  { s: "5,08(299)", t: "Q", why: "Vô hạn tuần hoàn → hữu tỉ" },
+  { s: "π", t: "I", why: "π = 3,14159… vô hạn không tuần hoàn → vô tỉ" },
+  { s: "√2", t: "I", why: "√2 = 1,41421… không tuần hoàn → vô tỉ" },
+  { s: "√3", t: "I", why: "3 không là số chính phương → √3 vô tỉ" },
+  { s: "−√5", t: "I", why: "√5 vô tỉ nên −√5 cũng vô tỉ" },
+  { s: "√15", t: "I", why: "15 không là số chính phương → √15 vô tỉ" },
+  { s: "√10", t: "I", why: "10 không là số chính phương → √10 vô tỉ" },
+  { s: "0,1010010001…", t: "I", why: "Các chữ số không lặp theo chu kì → vô tỉ" },
+  { s: "−π", t: "I", why: "π vô tỉ nên −π cũng vô tỉ" },
+  { s: "√7", t: "I", why: "7 không là số chính phương → √7 vô tỉ" },
+];
+const BANK_TRICKY = [
+  { s: "√16", t: "Q", why: "√16 = 4 → hữu tỉ" },
+  { s: "−√81", t: "Q", why: "−√81 = −9 → hữu tỉ" },
+  { s: "√0,25", t: "Q", why: "√0,25 = 0,5 → hữu tỉ" },
+  { s: "(√3)²", t: "Q", why: "(√3)² = 3 → hữu tỉ" },
+  { s: "√(4/9)", t: "Q", why: "√(4/9) = 2/3 → hữu tỉ" },
+  { s: "√(191²)", t: "Q", why: "√(191²) = 191 → hữu tỉ" },
+  { s: "√(1+2+1)", t: "Q", why: "√(1+2+1) = √4 = 2 → hữu tỉ" },
+  { s: "|−3,5|", t: "Q", why: "|−3,5| = 3,5 → hữu tỉ" },
+  { s: "√2,56", t: "Q", why: "√2,56 = 1,6 → hữu tỉ" },
+  { s: "√1024", t: "Q", why: "√1024 = 32 → hữu tỉ" },
+  { s: "0,(9)", t: "Q", why: "0,(9) = 1 → hữu tỉ" },
+  { s: "√100", t: "Q", why: "√100 = 10 → hữu tỉ" },
+  { s: "|−√2|", t: "I", why: "|−√2| = √2 → vô tỉ" },
+  { s: "√8", t: "I", why: "8 không là số chính phương → √8 vô tỉ" },
+  { s: "√91", t: "I", why: "√91 ≈ 9,539… không tuần hoàn → vô tỉ" },
+  { s: "√(2+3)", t: "I", why: "√(2+3) = √5 → vô tỉ" },
+  { s: "|−π|", t: "I", why: "|−π| = π → vô tỉ" },
+  { s: "√12", t: "I", why: "12 không là số chính phương → √12 vô tỉ" },
+  { s: "−√(1+1)", t: "I", why: "−√(1+1) = −√2 → vô tỉ" },
+  { s: "√50", t: "I", why: "50 không là số chính phương → √50 vô tỉ" },
+];
+// Câu hỏi: so sánh số thực, giá trị tuyệt đối, số đối, kí hiệu tập hợp (Bài 7 + Luyện tập chung)
+const QUIZ = [
+  { q: "So sánh √5 và 2,36", o: ["√5 < 2,36", "√5 = 2,36", "√5 > 2,36"], a: 0, why: "√5 ≈ 2,236… < 2,36" },
+  { q: "|−2,5| = ?", o: ["2,5", "−2,5", "0"], a: 0, why: "Giá trị tuyệt đối của số âm là số đối của nó: |−2,5| = 2,5" },
+  { q: "Số đối của −√5 là", o: ["√5", "−√5", "5"], a: 0, why: "Số đối của −a là a, nên số đối của −√5 là √5" },
+  { q: "|x| = 2,5 thì x bằng", o: ["2,5 hoặc −2,5", "chỉ 2,5", "chỉ −2,5"], a: 0, why: "Hai số đối nhau có giá trị tuyệt đối bằng nhau" },
+  { q: "Cách viết nào đúng?", o: ["π ∈ 𝕀", "√2 ∈ ℚ", "15 ∉ ℝ"], a: 0, why: "π là số vô tỉ; √2 không thuộc ℚ; 15 là số thực" },
+  { q: "So sánh 1,313233… và 1,(32)", o: ["1,313233… < 1,(32)", "1,313233… > 1,(32)", "Bằng nhau"], a: 0, why: "1,(32) = 1,3232… và 1,3132… < 1,3232…" },
+  { q: "So sánh −√2 và −1,41", o: ["−√2 < −1,41", "−√2 > −1,41", "Bằng nhau"], a: 0, why: "√2 = 1,414… > 1,41 nên −√2 < −1,41" },
+  { q: "Số nào là số vô tỉ?", o: ["√10", "√9", "0,(3)", "−4/7"], a: 0, why: "√9 = 3; 0,(3) và −4/7 là số hữu tỉ; √10 vô tỉ" },
+  { q: "A = {x ∈ ℤ | |x| < 5} có bao nhiêu phần tử?", o: ["9", "4", "5", "10"], a: 0, why: "A = {−4; −3; −2; −1; 0; 1; 2; 3; 4}" },
+  { q: "So sánh −12,7 và −7,12", o: ["−12,7 < −7,12", "−12,7 > −7,12", "Bằng nhau"], a: 0, why: "Trong hai số âm, số nào có giá trị tuyệt đối lớn hơn thì bé hơn" },
+  { q: "Vì 2 < 5 nên", o: ["√2 < √5", "√2 > √5", "√2 = √5"], a: 0, why: "Nếu 0 < a < b thì √a < √b" },
+  { q: "So sánh 0,24(7) và 0,2382…", o: ["0,24(7) > 0,2382…", "0,24(7) < 0,2382…", "Bằng nhau"], a: 0, why: "0,24(7) = 0,2477… > 0,2382…" },
+  { q: "|−√8| = ?", o: ["√8", "−√8", "8"], a: 0, why: "|−√8| = √8" },
+  { q: "Số thực gồm", o: ["Số hữu tỉ và số vô tỉ", "Chỉ số hữu tỉ", "Chỉ số vô tỉ"], a: 0, why: "Số hữu tỉ và số vô tỉ được gọi chung là số thực (ℝ)" },
+  { q: "Trên trục số, điểm −√2 nằm ở đâu?", o: ["Trước gốc O", "Sau gốc O", "Trùng gốc O"], a: 0, why: "−√2 < 0 nên điểm −√2 nằm trước gốc O" },
+  { q: "Mỗi điểm trên trục số biểu diễn", o: ["Một số thực", "Một số hữu tỉ", "Một số nguyên"], a: 0, why: "Các số thực lấp đầy trục số: trục số thực" },
+  { q: "Khẳng định nào sai?", o: ["|−2,5| = −2,5", "|−5,1| = 5,1", "|7/5| = 7/5"], a: 0, why: "Giá trị tuyệt đối không bao giờ âm" },
+  { q: "Hai số đối nhau có giá trị tuyệt đối", o: ["Bằng nhau", "Đối nhau", "Luôn bằng 0"], a: 0, why: "|a| = |−a|" },
+  { q: "|0| = ?", o: ["0", "1", "Không xác định"], a: 0, why: "Giá trị tuyệt đối của 0 là 0" },
+  { q: "√(3²) = ?", o: ["3", "−3", "9"], a: 0, why: "√(3²) = 3 vì 3 > 0" },
+  { q: "So sánh 12,26 và 12,(24)", o: ["12,26 > 12,(24)", "12,26 < 12,(24)", "Bằng nhau"], a: 0, why: "12,(24) = 12,2424… < 12,26" },
+];
+
+const LEVELS = [
+  { name: "Màn 1 · Nhận diện", short: "Màn 1", desc: "Phân số, thập phân tuần hoàn đối đầu π, √2, √15…",
+    ex: "3/4 · −2,(3) · π · √2", bank: BANK_BASIC, count: 14, cone: .15, quiz: 0, sun: 150, first: 20, gapA: 15, gapB: 8 },
+  { name: "Màn 2 · Đội lốt", short: "Màn 2", desc: "Zombie đội lốt: phải tính √16, −√81, (√3)² rồi mới biết là số gì.",
+    ex: "√16 · −√81 · |−√2| · √1024", bank: BANK_TRICKY.concat(BANK_BASIC.slice(11, 15)), count: 18, cone: .25, quiz: 0, sun: 150, first: 18, gapA: 13, gapB: 6.5 },
+  { name: "Màn 3 · Giáo sư Zombie", short: "Màn 3", desc: "Trộn tất cả, thêm Giáo sư có khiên: nhấn vào để trả lời câu hỏi so sánh, giá trị tuyệt đối.",
+    ex: "√5 ? 2,36 · |x| = 2,5", bank: BANK_BASIC.concat(BANK_TRICKY), count: 22, cone: .3, quiz: 5, sun: 175, first: 16, gapA: 12, gapB: 5.5 },
+];
+
+const PLANTS = {
+  sun:  { name: "Hoa Mặt Trời", cost: 50, cd: 5, hp: 300, key: "1", cls: "" , tip: "Tạo 25 nắng mỗi 12 giây." },
+  peaQ: { name: "Đậu ℚ", cost: 100, cd: 5, hp: 300, key: "2", cls: "q", tip: "Bắn hạ zombie mang số hữu tỉ." },
+  peaI: { name: "Đậu 𝕀", cost: 100, cd: 5, hp: 300, key: "3", cls: "i", tip: "Bắn hạ zombie mang số vô tỉ." },
+  nut:  { name: "Óc Chó Chắn", cost: 50, cd: 18, hp: 2400, key: "4", cls: "", tip: "Chắn đường rất lâu." },
+};
+const ORDER = ["sun", "peaQ", "peaI", "nut"];
+
+/* =========================================================
+   2. CANVAS, KÍCH THƯỚC
+   ========================================================= */
+const W = 1000, H = 580, LAWN_X = 100, TOP = 60, CELL = 100, ROWS = 5, COLS = 9;
+const cvs = document.getElementById("game");
+const ctx = cvs.getContext("2d");
+function fitCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cvs.width = W * dpr; cvs.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+fitCanvas();
+window.addEventListener("resize", fitCanvas);
+const rowY = r => TOP + r * CELL + CELL / 2;
+const colX = c => LAWN_X + c * CELL + CELL / 2;
+const MATH_FONT = '"Cambria Math","STIX Two Math","Noto Sans Math","Segoe UI Symbol","Be Vietnam Pro",serif';
+
+/* =========================================================
+   3. ÂM THANH NHỎ (WebAudio, chỉ chạy sau khi người chơi bấm)
+   ========================================================= */
+let audio = null, soundOn = true;
+function beep(freq, dur = .08, type = "square", vol = .05, slide = 0) {
+  if (!soundOn) return;
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = type; o.frequency.value = freq;
+    if (slide) o.frequency.linearRampToValueAtTime(freq + slide, audio.currentTime + dur);
+    g.gain.value = vol; g.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + dur);
+    o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime + dur);
+  } catch (e) { /* âm thanh không bắt buộc */ }
+}
+const SFX = {
+  shoot: () => beep(520, .05, "triangle", .03, -200),
+  hit: () => beep(180, .06, "square", .04),
+  miss: () => beep(900, .05, "sine", .025, 300),
+  die: () => beep(300, .25, "sawtooth", .04, -220),
+  sun: () => beep(880, .1, "sine", .05, 440),
+  plant: () => beep(330, .08, "triangle", .05, 120),
+  good: () => { beep(660, .1, "triangle", .05); setTimeout(() => beep(990, .14, "triangle", .05), 90); },
+  bad: () => beep(160, .25, "sawtooth", .05, -60),
+  mower: () => beep(120, .5, "sawtooth", .04, 60),
+};
+
+/* =========================================================
+   4. VẼ CÁC NHÂN VẬT
+   ========================================================= */
+function roundRect(c, x, y, w, h, r) {
+  c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+function drawSunOrb(c, x, y, r, t) {
+  c.save(); c.translate(x, y); c.rotate(t * .8);
+  c.fillStyle = "#ffe066";
+  for (let k = 0; k < 10; k++) { c.rotate(Math.PI / 5); c.beginPath(); c.moveTo(r * .55, -r * .22); c.lineTo(r * 1.15, 0); c.lineTo(r * .55, r * .22); c.fill(); }
+  c.restore();
+  const g = c.createRadialGradient(x - r * .3, y - r * .3, r * .1, x, y, r);
+  g.addColorStop(0, "#fff6b0"); g.addColorStop(1, "#ffb81c");
+  c.fillStyle = g; c.beginPath(); c.arc(x, y, r * .75, 0, 7); c.fill();
+}
+function drawStem(c, x, y) {
+  c.strokeStyle = "#2f7d2a"; c.lineWidth = 5; c.lineCap = "round";
+  c.beginPath(); c.moveTo(x, y + 2); c.quadraticCurveTo(x - 4, y + 22, x, y + 38); c.stroke();
+  c.fillStyle = "#4caf3c";
+  c.beginPath(); c.ellipse(x - 14, y + 36, 16, 6, -.35, 0, 7); c.fill();
+  c.beginPath(); c.ellipse(x + 14, y + 36, 16, 6, .35, 0, 7); c.fill();
+}
+function drawFace(c, x, y, s = 1) {
+  c.fillStyle = "#1d1406";
+  c.beginPath(); c.arc(x - 5 * s, y - 2 * s, 2.6 * s, 0, 7); c.arc(x + 5 * s, y - 2 * s, 2.6 * s, 0, 7); c.fill();
+  c.strokeStyle = "#1d1406"; c.lineWidth = 2 * s; c.beginPath(); c.arc(x, y + 2 * s, 5 * s, .15 * Math.PI, .85 * Math.PI); c.stroke();
+}
+function drawPlant(c, type, x, y, t, hpRatio = 1, flash = 0) {
+  c.save();
+  const sway = Math.sin(t * 2.2 + x * .01) * 2;
+  if (type === "sun") {
+    drawStem(c, x, y + 4);
+    c.save(); c.translate(x + sway, y - 8); c.rotate(Math.sin(t * 1.5) * .08);
+    c.fillStyle = "#ffcf2e";
+    for (let k = 0; k < 12; k++) { c.rotate(Math.PI / 6); c.beginPath(); c.ellipse(0, -22, 7, 13, 0, 0, 7); c.fill(); }
+    c.fillStyle = "#8b5a1f"; c.beginPath(); c.arc(0, 0, 15, 0, 7); c.fill();
+    c.restore();
+    drawFace(c, x + sway, y - 8, 1);
+  } else if (type === "peaQ" || type === "peaI") {
+    const isQ = type === "peaQ";
+    const body = isQ ? "#5cc04a" : "#9a63dc", dark = isQ ? "#2f8a2c" : "#5d2a9c";
+    drawStem(c, x - 2, y + 4);
+    const hx = x - 4 + sway, hy = y - 10;
+    c.fillStyle = dark; c.beginPath(); c.ellipse(hx - 20, hy - 6, 9, 5, -.7, 0, 7); c.fill();
+    c.fillStyle = body; c.beginPath(); c.arc(hx, hy, 21, 0, 7); c.fill();
+    c.beginPath(); c.ellipse(hx + 24, hy - 2, 10, 9, 0, 0, 7); c.fill();
+    c.fillStyle = dark; c.beginPath(); c.ellipse(hx + 30, hy - 2, 5, 7, 0, 0, 7); c.fill();
+    c.fillStyle = "#1d1406"; c.beginPath(); c.arc(hx + 6, hy - 7, 3.4, 0, 7); c.fill();
+    c.fillStyle = "#fff"; c.font = `700 22px ${MATH_FONT}`; c.textAlign = "center"; c.textBaseline = "middle";
+    c.fillText(isQ ? "ℚ" : "𝕀", hx - 7, hy + 4);
+  } else if (type === "nut") {
+    c.fillStyle = "#b07a3c"; c.beginPath(); c.ellipse(x, y - 2, 30, 38, 0, 0, 7); c.fill();
+    c.fillStyle = "#c98f4c"; c.beginPath(); c.ellipse(x - 8, y - 12, 14, 18, -.3, 0, 7); c.fill();
+    drawFace(c, x + 2, y - 6, 1.2);
+    c.strokeStyle = "#5a3418"; c.lineWidth = 2;
+    if (hpRatio < .66) { c.beginPath(); c.moveTo(x - 18, y - 22); c.lineTo(x - 8, y - 10); c.lineTo(x - 14, y + 2); c.stroke(); }
+    if (hpRatio < .33) { c.beginPath(); c.moveTo(x + 20, y + 4); c.lineTo(x + 8, y + 14); c.lineTo(x + 14, y + 26); c.stroke(); }
+  }
+  if (flash > 0) { c.globalAlpha = Math.min(flash * 3, .5); c.fillStyle = "#ff3b1f"; c.beginPath(); c.arc(x, y - 4, 34, 0, 7); c.fill(); }
+  c.restore();
+}
+function drawZombie(c, z, t) {
+  const x = z.x, y = rowY(z.row) + 8;
+  const ph = z.anim;
+  const eat = z.eating ? Math.sin(t * 14) * 3 : 0;
+  c.save();
+  if (z.dying > 0) { c.globalAlpha = Math.max(z.dying / .6, 0); }
+  // legs
+  c.strokeStyle = "#3b4a2e"; c.lineWidth = 7; c.lineCap = "round";
+  const lg = z.eating ? 0 : Math.sin(ph) * 8;
+  c.beginPath(); c.moveTo(x - 4, y + 22); c.lineTo(x - 6 + lg, y + 44); c.moveTo(x + 6, y + 22); c.lineTo(x + 6 - lg, y + 44); c.stroke();
+  // torso
+  c.fillStyle = z.kind === "quiz" ? "#3c3a52" : "#6b5136";
+  roundRect(c, x - 17, y - 14, 34, 40, 7); c.fill();
+  c.fillStyle = "#e8e2cf"; c.beginPath(); c.moveTo(x - 6, y - 14); c.lineTo(x + 6, y - 14); c.lineTo(x, y + 4); c.fill();
+  c.fillStyle = z.kind === "quiz" ? "#e7a50b" : "#b62a1a"; c.beginPath(); c.moveTo(x - 2, y - 12); c.lineTo(x + 2, y - 12); c.lineTo(x + 3, y + 8); c.lineTo(x, y + 12); c.lineTo(x - 3, y + 8); c.fill();
+  // arms reaching left
+  c.strokeStyle = "#8fae7a"; c.lineWidth = 6;
+  c.beginPath(); c.moveTo(x - 12, y - 6); c.lineTo(x - 34, y - 8 + eat); c.moveTo(x - 10, y + 4); c.lineTo(x - 32, y + 4 - eat); c.stroke();
+  // head
+  const hy = y - 30 + Math.sin(ph * .5) * 1.5;
+  c.fillStyle = "#a9c592"; c.beginPath(); c.arc(x - 2, hy, 16, 0, 7); c.fill();
+  c.fillStyle = "#fff"; c.beginPath(); c.arc(x - 9, hy - 3, 5, 0, 7); c.arc(x + 2, hy - 4, 4, 0, 7); c.fill();
+  c.fillStyle = "#1d1406"; c.beginPath(); c.arc(x - 10, hy - 3, 2, 0, 7); c.arc(x + 1, hy - 4, 1.8, 0, 7); c.fill();
+  c.strokeStyle = "#3b2a1a"; c.lineWidth = 2; c.beginPath(); c.moveTo(x - 12, hy + 8); c.lineTo(x - 2, hy + 6); c.stroke();
+  if (z.kind === "cone" && z.hp > z.maxHp * .5) {
+    c.fillStyle = "#f08a24"; c.beginPath(); c.moveTo(x - 16, hy - 10); c.lineTo(x + 12, hy - 10); c.lineTo(x - 3, hy - 40); c.closePath(); c.fill();
+    c.fillStyle = "#fff3"; c.fillRect(x - 10, hy - 22, 16, 4);
+  }
+  if (z.kind === "quiz") {
+    c.fillStyle = "#1d1d28"; c.beginPath(); c.moveTo(x - 22, hy - 14); c.lineTo(x - 2, hy - 22); c.lineTo(x + 18, hy - 14); c.lineTo(x - 2, hy - 6); c.closePath(); c.fill();
+    c.strokeStyle = "#e7a50b"; c.lineWidth = 2; c.beginPath(); c.moveTo(x + 14, hy - 14); c.lineTo(x + 16, hy - 2); c.stroke();
+    c.strokeStyle = "#1d1406"; c.lineWidth = 1.5; c.beginPath(); c.arc(x - 9, hy - 3, 5.5, 0, 7); c.arc(x + 2, hy - 4, 5, 0, 7); c.stroke();
+    // khiên
+    const pulse = .5 + Math.sin(t * 4) * .2;
+    c.strokeStyle = `rgba(255, 214, 72, ${pulse})`; c.lineWidth = 4; c.beginPath(); c.ellipse(x, y - 10, 40, 58, 0, 0, 7); c.stroke();
+  }
+  // biển số
+  const label = z.kind === "quiz" ? "?" : z.num.s;
+  c.font = `700 ${label.length > 9 ? 17 : 21}px ${MATH_FONT}`;
+  const tw = Math.max(c.measureText(label).width + 18, 40);
+  const sy = hy - (z.kind === "cone" ? 66 : 50);
+  c.strokeStyle = "#5a3418"; c.lineWidth = 3; c.beginPath(); c.moveTo(x + 10, y - 8); c.lineTo(x + 8, sy + 14); c.stroke();
+  c.fillStyle = z.kind === "quiz" ? "#ffd84a" : "#fff8e3";
+  roundRect(c, x - tw / 2, sy - 14, tw, 30, 6); c.fill();
+  c.lineWidth = z.flash > 0 ? 4 : 2.5;
+  c.strokeStyle = z.flash > 0 ? "#d2432a" : "#5a3418"; c.stroke();
+  c.fillStyle = "#2b2113"; c.textAlign = "center"; c.textBaseline = "middle";
+  c.fillText(label, x, sy + 2);
+  // thanh máu
+  if (z.kind !== "quiz" && z.hp < z.maxHp) {
+    c.fillStyle = "#0005"; c.fillRect(x - 20, sy + 19, 40, 5);
+    c.fillStyle = "#e3412a"; c.fillRect(x - 20, sy + 19, 40 * Math.max(z.hp, 0) / z.maxHp, 5);
+  }
+  c.restore();
+}
+function drawMower(c, x, y) {
+  c.fillStyle = "#c8372a"; roundRect(c, x - 22, y - 8, 40, 20, 5); c.fill();
+  c.fillStyle = "#9d9d9d"; c.fillRect(x + 14, y - 4, 10, 14);
+  c.fillStyle = "#222"; c.beginPath(); c.arc(x - 12, y + 14, 6, 0, 7); c.arc(x + 10, y + 14, 6, 0, 7); c.fill();
+  c.strokeStyle = "#555"; c.lineWidth = 3; c.beginPath(); c.moveTo(x - 20, y - 6); c.lineTo(x - 34, y - 24); c.stroke();
+}
+
+/* =========================================================
+   5. TRẠNG THÁI TRÒ CHƠI
+   ========================================================= */
+let G = null, levelIdx = 0, selected = null, shovel = false, paused = true, modalOpen = false;
+let hover = null, lastTime = 0, gameTime = 0;
+const best = loadBest();
+function loadBest() { try { return JSON.parse(localStorage.getItem("sothuc-best") || "{}") || {}; } catch (e) { return {}; } }
+function saveBest() { try { localStorage.setItem("sothuc-best", JSON.stringify(best)); } catch (e) { /* bỏ qua */ } }
+
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+function buildSchedule(L) {
+  const qs = shuffle(L.bank.filter(n => n.t === "Q").slice()), is = shuffle(L.bank.filter(n => n.t === "I").slice());
+  const list = []; let t = L.first, qi = 0, ii = 0, lastRows = [];
+  const finalStart = Math.floor(L.count * .7);
+  const quizSlots = new Set();
+  for (let k = 0; k < L.quiz; k++) quizSlots.add(Math.floor(3 + k * (L.count - 4) / Math.max(L.quiz, 1)));
+  for (let i = 0; i < L.count; i++) {
+    if (i < finalStart) t += i === 0 ? 0 : L.gapA + (L.gapB - L.gapA) * (i / finalStart);
+    else if (i === finalStart) t += 12;
+    else t += 1.3;
+    let row; do { row = Math.floor(Math.random() * ROWS); } while (lastRows.length >= 2 && lastRows.every(r => r === row));
+    lastRows.push(row); if (lastRows.length > 2) lastRows.shift();
+    const useQ = (i % 2 === 0) !== (Math.random() < .25);
+    const num = useQ ? qs[qi++ % qs.length] : is[ii++ % is.length];
+    const kind = quizSlots.has(i) ? "quiz" : (i > 2 && Math.random() < L.cone ? "cone" : "normal");
+    list.push({ t, row, num, kind, final: i === finalStart });
+  }
+  return list;
+}
+
+function newGame(idx) {
+  levelIdx = idx;
+  const L = LEVELS[idx];
+  G = {
+    L, sun: L.sun, plants: Array.from({ length: ROWS }, () => Array(COLS).fill(null)),
+    zombies: [], peas: [], suns: [], floaters: [], mowers: Array.from({ length: ROWS }, () => ({ x: 52, state: "ready" })),
+    schedule: buildSchedule(L), spawned: 0, killed: 0, cooldown: {}, skyTimer: 7, riddleCd: 0,
+    stats: { right: 0, wrong: 0, mowers: 0, quizRight: 0, quizWrong: 0, riddleRight: 0, riddleWrong: 0 },
+    confused: {}, notebook: new Map(), banner: null, over: false, nextId: 1, quizPool: shuffle(QUIZ.slice()), quizIdx: 0,
+  };
+  gameTime = 0; selected = null; shovel = false;
+  hideAll(); paused = false; modalOpen = false;
+  document.getElementById("pauseBtn").firstChild.textContent = "Tạm dừng";
+  document.getElementById("lvName").textContent = L.short;
+  banner(L.name, 2.6);
+  renderCards(); updateHud();
+}
+
+function banner(text, dur = 2.5) { if (G) G.banner = { text, life: dur, max: dur }; }
+function floater(x, y, text, opts = {}) {
+  G.floaters.push({ x, y, text, life: opts.life || 1.6, max: opts.life || 1.6, color: opts.color || "#2b2113", bg: opts.bg || "#fff8e3", size: opts.size || 16 });
+}
+
+/* =========================================================
+   6. CẬP NHẬT
+   ========================================================= */
+function spawnZombie(s) {
+  const base = { normal: 100, cone: 220, quiz: 1 }[s.kind];
+  G.zombies.push({
+    id: G.nextId++, row: s.row, x: W + 40, hp: base, maxHp: base, kind: s.kind, num: s.num,
+    speed: s.kind === "quiz" ? 15 : 20 + Math.random() * 4, anim: Math.random() * 6, eating: null, flash: 0, dying: 0, shieldMsg: 0,
+  });
+  if (s.final) { banner("Đợt zombie cuối cùng!", 2.8); SFX.mower(); }
+}
+
+function quizFromPool() {
+  const q = G.quizPool[G.quizIdx % G.quizPool.length]; G.quizIdx++;
+  if (G.quizIdx % G.quizPool.length === 0) shuffle(G.quizPool);
+  return q;
+}
+
+function killZombie(z, how) {
+  if (z.dying > 0) return;
+  z.dying = .6; z.eating = null;
+  G.killed++;
+  if (z.kind !== "quiz") {
+    const ok = how !== "mower";
+    G.notebook.set(z.num.s, z.num);
+    floater(z.x, rowY(z.row) - 50, z.num.why, { life: 2.6, color: z.num.t === "Q" ? "#1f6e2a" : "#57278f", size: 15 });
+    if (!ok) floater(z.x, rowY(z.row) - 20, "Máy cắt cỏ!", { color: "#8a2a17", life: 1.2 });
+  }
+  SFX.die();
+}
+
+function update(dt) {
+  gameTime += dt;
+  const t = gameTime;
+  // xuất hiện zombie
+  while (G.spawned < G.schedule.length && G.schedule[G.spawned].t <= t) spawnZombie(G.schedule[G.spawned++]);
+  // nắng rơi từ trời
+  G.skyTimer -= dt;
+  if (G.skyTimer <= 0) {
+    G.skyTimer = 9 + Math.random() * 3;
+    const x = LAWN_X + 40 + Math.random() * (COLS * CELL - 80);
+    G.suns.push({ x, y: -20, ty: TOP + 40 + Math.random() * (ROWS * CELL - 80), v: 25, life: 10 });
+  }
+  for (const k in G.cooldown) G.cooldown[k] = Math.max(0, G.cooldown[k] - dt);
+  G.riddleCd = Math.max(0, G.riddleCd - dt);
+
+  // cây
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const p = G.plants[r][c]; if (!p) continue;
+    p.flash = Math.max(0, p.flash - dt);
+    if (p.type === "sun") {
+      p.timer -= dt;
+      if (p.timer <= 0) { p.timer = 12; G.suns.push({ x: colX(c) + 18, y: rowY(r) - 20, ty: rowY(r) + 10, v: 25, life: 9, pop: true }); }
+    } else if (p.type === "peaQ" || p.type === "peaI") {
+      p.timer -= dt;
+      const target = G.zombies.some(z => z.row === r && z.dying <= 0 && z.x > colX(c) && z.x < W + 10);
+      if (target && p.timer <= 0) {
+        p.timer = 1.45;
+        G.peas.push({ row: r, x: colX(c) + 30, type: p.type === "peaQ" ? "Q" : "I", passed: new Set() });
+        SFX.shoot();
+      }
+    }
+  }
+
+  // đạn
+  for (const pe of G.peas) {
+    pe.x += 330 * dt;
+    for (const z of G.zombies) {
+      if (z.row !== pe.row || z.dying > 0 || pe.passed.has(z.id) || pe.dead) continue;
+      if (Math.abs(z.x - pe.x) > 18) continue;
+      if (z.kind === "quiz") {
+        pe.dead = true;
+        if (z.shieldMsg <= 0) { floater(z.x, rowY(z.row) - 10, "Nhấn vào Giáo sư để trả lời!", { bg: "#ffd84a", size: 14, life: 1.8 }); z.shieldMsg = 3; }
+      } else if (z.num.t === pe.type) {
+        pe.dead = true; z.hp -= 20; z.flash = 0; G.stats.right++; SFX.hit();
+        if (z.hp <= 0) killZombie(z, "pea");
+      } else {
+        pe.passed.add(z.id); z.flash = .35; G.stats.wrong++;
+        G.confused[z.num.s] = G.confused[z.num.s] || { n: 0, num: z.num };
+        G.confused[z.num.s].n++;
+        floater(z.x + 6, rowY(z.row) - 6, "✗ xuyên qua", { color: "#8a2a17", bg: "#fbe3dc", size: 13, life: .9 });
+        SFX.miss();
+      }
+    }
+  }
+  G.peas = G.peas.filter(p => !p.dead && p.x < W + 30);
+
+  // zombie
+  for (const z of G.zombies) {
+    z.flash = Math.max(0, z.flash - dt); z.shieldMsg -= dt;
+    if (z.dying > 0) { z.dying -= dt; if (z.dying <= 0) z.dying = -1; continue; }
+    // ăn cây?
+    let victim = null;
+    for (let c = COLS - 1; c >= 0; c--) {
+      const p = G.plants[z.row][c];
+      if (p && z.x > colX(c) - 10 && z.x - 34 < colX(c) + 28) { victim = p; break; }
+    }
+    z.eating = victim;
+    if (victim) {
+      victim.hp -= 55 * dt; victim.flash = .15;
+      if (victim.hp <= 0) { G.plants[z.row][victim.c] = null; z.eating = null; }
+    } else {
+      z.x -= z.speed * dt; z.anim += dt * 6;
+    }
+    // máy cắt cỏ / vào nhà
+    const m = G.mowers[z.row];
+    if (z.x < LAWN_X + 10 && m.state === "ready") { m.state = "go"; G.stats.mowers++; SFX.mower(); }
+    if (z.x < 30 && !G.over) { lose(); return; }
+  }
+  for (let r = 0; r < ROWS; r++) {
+    const m = G.mowers[r];
+    if (m.state !== "go") continue;
+    m.x += 520 * dt;
+    for (const z of G.zombies) if (z.row === r && z.dying <= 0 && Math.abs(z.x - m.x) < 40) killZombie(z, "mower");
+    if (m.x > W + 60) m.state = "used";
+  }
+  G.zombies = G.zombies.filter(z => !(z.dying < 0));
+
+  // nắng
+  for (const s of G.suns) {
+    if (s.collect) { s.x += (40 - s.x) * Math.min(1, dt * 8); s.y += (-10 - s.y) * Math.min(1, dt * 8); s.life -= dt; continue; }
+    if (s.y < s.ty) s.y += (s.pop ? 60 : 95) * dt;
+    s.life -= dt;
+    if (s.life <= 2) collectSun(s); // tự nhặt để học sinh tập trung vào toán
+  }
+  G.suns = G.suns.filter(s => !(s.collect && s.life < s.collectEnd));
+
+  for (const f of G.floaters) { f.life -= dt; f.y -= 14 * dt; }
+  G.floaters = G.floaters.filter(f => f.life > 0);
+  if (G.banner) { G.banner.life -= dt; if (G.banner.life <= 0) G.banner = null; }
+
+  if (G.spawned >= G.schedule.length && G.zombies.length === 0 && !G.over) win();
+}
+
+function collectSun(s) {
+  if (s.collect) return;
+  s.collect = true; s.collectEnd = s.life - .45;
+  G.sun += s.v; SFX.sun(); updateHud();
+}
+
+/* =========================================================
+   7. VẼ KHUNG HÌNH
+   ========================================================= */
+function draw() {
+  const t = gameTime;
+  // trời + hàng rào
+  ctx.fillStyle = "#bfe3f2"; ctx.fillRect(0, 0, W, TOP);
+  ctx.fillStyle = "#d9b27c";
+  for (let x = LAWN_X; x < W; x += 34) { roundRect(ctx, x + 2, 10, 26, TOP - 6, 6); ctx.fill(); }
+  ctx.fillStyle = "#b98a52"; ctx.fillRect(LAWN_X, 24, W - LAWN_X, 7); ctx.fillRect(LAWN_X, 44, W - LAWN_X, 7);
+  // nhà
+  ctx.fillStyle = "#e9d3b0"; ctx.fillRect(0, 0, LAWN_X, H);
+  ctx.fillStyle = "#c66a3d"; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(LAWN_X, 0); ctx.lineTo(LAWN_X, 26); ctx.lineTo(0, 46); ctx.fill();
+  ctx.fillStyle = "#8a5a2b"; ctx.fillRect(LAWN_X - 10, 0, 10, H);
+  ctx.save(); ctx.translate(26, H / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = "#8a5a2b"; ctx.font = "800 20px 'Baloo 2', sans-serif"; ctx.textAlign = "center"; ctx.fillText("NHÀ CỦA EM", 0, 0); ctx.restore();
+  // bãi cỏ caro
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    ctx.fillStyle = (r + c) % 2 ? "#79c047" : "#6cb53d";
+    ctx.fillRect(LAWN_X + c * CELL, TOP + r * CELL, CELL, CELL);
+  }
+  ctx.fillStyle = "#5e9f33"; ctx.fillRect(LAWN_X, TOP + ROWS * CELL, W - LAWN_X, H - TOP - ROWS * CELL);
+  // ô đang trỏ
+  if (hover && !paused && (selected || shovel)) {
+    const { r, c } = hover;
+    const occupied = !!G.plants[r][c];
+    ctx.fillStyle = shovel ? (occupied ? "#ff3b1f44" : "#0000") : (occupied ? "#ff3b1f33" : "#ffffff40");
+    ctx.fillRect(LAWN_X + c * CELL, TOP + r * CELL, CELL, CELL);
+    if (selected && !occupied) { ctx.globalAlpha = .45; drawPlant(ctx, selected, colX(c), rowY(r), t); ctx.globalAlpha = 1; }
+  }
+  if (!G) return;
+  // máy cắt cỏ
+  for (let r = 0; r < ROWS; r++) if (G.mowers[r].state !== "used") drawMower(ctx, G.mowers[r].x, rowY(r) + 22);
+  // cây
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { const p = G.plants[r][c]; if (p) drawPlant(ctx, p.type, colX(c), rowY(r), t, p.hp / p.maxHp, p.flash); }
+  // zombie (vẽ theo làn để làn dưới đè lên làn trên)
+  const zs = G.zombies.slice().sort((a, b) => a.row - b.row || b.x - a.x);
+  for (const z of zs) drawZombie(ctx, z, t);
+  // đạn
+  for (const p of G.peas) {
+    ctx.fillStyle = p.type === "Q" ? "#3fb53a" : "#9a52e6";
+    ctx.beginPath(); ctx.arc(p.x, rowY(p.row) - 12, 9, 0, 7); ctx.fill();
+    ctx.fillStyle = "#fff8"; ctx.beginPath(); ctx.arc(p.x - 3, rowY(p.row) - 15, 3, 0, 7); ctx.fill();
+  }
+  // nắng
+  for (const s of G.suns) drawSunOrb(ctx, s.x, s.y, 24, t);
+  // chữ nổi
+  for (const f of G.floaters) {
+    ctx.save(); ctx.globalAlpha = Math.min(1, f.life / (f.max * .35));
+    ctx.font = `700 ${f.size}px ${MATH_FONT}`;
+    const w = ctx.measureText(f.text).width + 16;
+    const x = Math.min(Math.max(f.x, LAWN_X + w / 2), W - w / 2 - 4);
+    ctx.fillStyle = f.bg; roundRect(ctx, x - w / 2, f.y - f.size, w, f.size * 1.8, 8); ctx.fill();
+    ctx.strokeStyle = "#5a341855"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = f.color; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(f.text, x, f.y - f.size * .1);
+    ctx.restore();
+  }
+  // biểu ngữ
+  if (G.banner) {
+    const b = G.banner, a = Math.min(1, b.life / .4, (b.max - b.life) / .3 + .2);
+    ctx.save(); ctx.globalAlpha = Math.max(0, a);
+    ctx.font = "800 46px 'Baloo 2', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.lineWidth = 8; ctx.strokeStyle = "#5a3418"; ctx.strokeText(b.text, (W + LAWN_X) / 2, H / 2);
+    ctx.fillStyle = "#fff8e3"; ctx.fillText(b.text, (W + LAWN_X) / 2, H / 2);
+    ctx.restore();
+  }
+}
+
+/* =========================================================
+   8. GIAO DIỆN: THẺ CÂY, HUD
+   ========================================================= */
+const cardsEl = document.getElementById("cards");
+const cardEls = {};
+function renderCards() {
+  cardsEl.innerHTML = "";
+  for (const k of ORDER) {
+    const P = PLANTS[k];
+    const b = document.createElement("button");
+    b.className = "card " + P.cls; b.setAttribute("aria-pressed", "false");
+    b.title = `${P.name} – ${P.tip} (phím ${P.key})`;
+    b.innerHTML = `<span class="key">${P.key}</span><canvas width="112" height="112" aria-hidden="true"></canvas><span class="nm">${P.name}</span><span class="cost"><i></i>${P.cost}</span><span class="cd"></span>`;
+    const c2 = b.querySelector("canvas").getContext("2d"); c2.scale(1.1, 1.1);
+    drawPlant(c2, k, 50, 50, 0);
+    b.addEventListener("click", () => selectPlant(k));
+    cardsEl.appendChild(b); cardEls[k] = b;
+  }
+  refreshCardsLight();
+}
+function refreshCardsLight() {
+  if (!G) return;
+  for (const k of ORDER) {
+    const el = cardEls[k]; if (!el) continue;
+    const P = PLANTS[k], cd = G.cooldown[k] || 0;
+    el.classList.toggle("poor", G.sun < P.cost);
+    el.querySelector(".cd").style.height = (cd / P.cd * 100) + "%";
+    el.setAttribute("aria-pressed", String(selected === k));
+  }
+  document.getElementById("shovelBtn").setAttribute("aria-pressed", String(shovel));
+  const rb = document.getElementById("riddleBtn");
+  rb.disabled = G.riddleCd > 0;
+  document.getElementById("riddleSub").textContent = G.riddleCd > 0 ? `chờ ${Math.ceil(G.riddleCd)} giây` : "+50 nắng";
+  updateHud();
+}
+function updateHud() {
+  if (!G) return;
+  document.getElementById("sunVal").textContent = G.sun;
+  const total = G.schedule.length;
+  document.getElementById("progFill").style.width = (G.killed / total * 100) + "%";
+  document.getElementById("progTxt").textContent = `${G.killed}/${total} zombie`;
+}
+function selectPlant(k) {
+  if (!G || G.over) return;
+  const P = PLANTS[k];
+  if (selected === k) { selected = null; refreshCardsLight(); return; }
+  if (G.sun < P.cost) { flashMsg(`Cần ${P.cost} nắng để trồng ${P.name}`); SFX.bad(); return; }
+  if ((G.cooldown[k] || 0) > 0) { flashMsg(`${P.name} đang hồi, chờ một chút`); return; }
+  selected = k; shovel = false; refreshCardsLight();
+}
+function flashMsg(text) { if (G) floater((W + LAWN_X) / 2, TOP + 30, text, { bg: "#fff8e3", color: "#8a2a17", size: 16, life: 1.6 }); }
+
+/* =========================================================
+   9. ĐIỀU KHIỂN: CHUỘT / CHẠM / PHÍM
+   ========================================================= */
+function toGame(e) {
+  const r = cvs.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height };
+}
+function cellAt(p) {
+  const c = Math.floor((p.x - LAWN_X) / CELL), r = Math.floor((p.y - TOP) / CELL);
+  return (c >= 0 && c < COLS && r >= 0 && r < ROWS) ? { r, c } : null;
+}
+cvs.addEventListener("pointermove", e => { hover = cellAt(toGame(e)); });
+cvs.addEventListener("pointerleave", () => { hover = null; });
+cvs.addEventListener("pointerdown", e => {
+  if (!G || paused || G.over || modalOpen) return;
+  const p = toGame(e);
+  // 1) nhặt nắng
+  for (const s of G.suns) if (!s.collect && Math.hypot(s.x - p.x, s.y - p.y) < 34) { collectSun(s); return; }
+  // 2) nhấn Giáo sư Zombie
+  for (const z of G.zombies) {
+    if (z.kind === "quiz" && z.dying <= 0 && Math.abs(z.x - p.x) < 44 && Math.abs(rowY(z.row) - 20 - p.y) < 70) { openQuiz("prof", z); return; }
+  }
+  // 3) trồng / nhổ
+  const cell = cellAt(p); if (!cell) return;
+  const { r, c } = cell;
+  if (shovel) {
+    if (G.plants[r][c]) { G.plants[r][c] = null; SFX.plant(); }
+    shovel = false; refreshCardsLight(); return;
+  }
+  if (!selected) {
+    if (!G.plants[r][c]) flashMsg("Chọn một thẻ cây phía trên trước");
+    return;
+  }
+  if (G.plants[r][c]) { flashMsg("Ô này đã có cây"); return; }
+  const P = PLANTS[selected];
+  if (G.sun < P.cost) { flashMsg(`Cần ${P.cost} nắng`); return; }
+  G.plants[r][c] = { type: selected, r, c, hp: P.hp, maxHp: P.hp, timer: selected === "sun" ? 6 : .3, flash: 0 };
+  G.sun -= P.cost; G.cooldown[selected] = P.cd; SFX.plant();
+  selected = null; refreshCardsLight();
+});
+document.addEventListener("keydown", e => {
+  if (e.target && e.target.tagName === "INPUT") return;
+  if (!G || G.over) return;
+  if (e.key === "p" || e.key === "P") { e.preventDefault(); togglePause(); return; }
+  if (paused || modalOpen) return;
+  const k = ORDER.find(o => PLANTS[o].key === e.key);
+  if (k) selectPlant(k);
+  else if (e.key === "x" || e.key === "X") { shovel = !shovel; selected = null; refreshCardsLight(); }
+  else if (e.key === "Escape") { selected = null; shovel = false; refreshCardsLight(); }
+});
+
+/* =========================================================
+   10. CÂU HỎI (Giáo sư Zombie + Giải đố lấy nắng)
+   ========================================================= */
+const quizOv = document.getElementById("quizOv");
+let quizCtx = null;
+function openQuiz(mode, z) {
+  const q = quizFromPool();
+  quizCtx = { mode, z, q, done: false };
+  paused = true; modalOpen = true;
+  document.getElementById("quizEyebrow").textContent = mode === "prof" ? "Giáo sư Zombie chặn đường" : "Giải đố lấy nắng";
+  document.getElementById("quizTitle").textContent = mode === "prof" ? "Trả lời đúng để hạ Giáo sư" : "Trả lời đúng nhận +50 nắng";
+  document.getElementById("quizQ").textContent = q.q;
+  const box = document.getElementById("quizOpts"); box.innerHTML = "";
+  const order = shuffle(q.o.map((_, i) => i));
+  for (const i of order) {
+    const b = document.createElement("button"); b.className = "opt"; b.textContent = q.o[i];
+    b.addEventListener("click", () => answer(i, b));
+    box.appendChild(b);
+  }
+  document.getElementById("quizFb").hidden = true; document.getElementById("quizRow").hidden = true;
+  quizOv.hidden = false;
+  setTimeout(() => box.querySelector("button")?.focus(), 30);
+}
+function answer(i, btn) {
+  if (!quizCtx || quizCtx.done) return;
+  quizCtx.done = true;
+  const { q, mode, z } = quizCtx, ok = i === q.a;
+  for (const b of document.querySelectorAll("#quizOpts .opt")) {
+    b.disabled = true;
+    if (b.textContent === q.o[q.a]) b.classList.add("right");
+  }
+  if (!ok) btn.classList.add("wrong");
+  const fb = document.getElementById("quizFb");
+  fb.hidden = false; fb.className = "feedback " + (ok ? "good" : "bad");
+  if (mode === "prof") {
+    if (ok) { fb.textContent = `Chính xác! ${q.why}. Giáo sư bị hạ, em nhận thêm 50 nắng.`; G.stats.quizRight++; }
+    else { fb.textContent = `Chưa đúng. ${q.why}. Giáo sư mất khiên và biến thành zombie đội nón mang số ${z.num.s}.`; G.stats.quizWrong++; }
+  } else {
+    if (ok) { fb.textContent = `Chính xác! ${q.why}. +50 nắng.`; G.stats.riddleRight++; }
+    else { fb.textContent = `Chưa đúng. ${q.why}.`; G.stats.riddleWrong++; }
+  }
+  ok ? SFX.good() : SFX.bad();
+  document.getElementById("quizRow").hidden = false;
+  document.getElementById("quizGo").focus();
+}
+document.getElementById("quizGo").addEventListener("click", () => {
+  const { q, mode, z } = quizCtx; const ok = document.querySelector("#quizFb").classList.contains("good");
+  if (mode === "prof") {
+    if (ok) { G.sun += 50; floater(z.x, rowY(z.row) - 40, "Đúng! +50 nắng", { color: "#1f6e2a", life: 1.6 }); killZombie(z, "quiz"); }
+    else { z.kind = "cone"; z.hp = z.maxHp = 220; z.speed = 24; floater(z.x, rowY(z.row) - 40, `Giáo sư hoá thành ${z.num.s}`, { color: "#8a2a17", life: 1.8 }); }
+  } else {
+    G.riddleCd = 25;
+    if (ok) G.sun += 50;
+  }
+  quizOv.hidden = true; modalOpen = false; paused = false; quizCtx = null; refreshCardsLight();
+});
+document.getElementById("riddleBtn").addEventListener("click", () => {
+  if (!G || G.over || paused || G.riddleCd > 0) return;
+  openQuiz("riddle");
+});
+
+/* =========================================================
+   11. THẮNG / THUA, MENU
+   ========================================================= */
+function stars() { const m = G.stats.mowers; return m === 0 ? 3 : m <= 2 ? 2 : 1; }
+function win() {
+  G.over = true; const s = stars();
+  best[levelIdx] = Math.max(best[levelIdx] || 0, s); saveBest();
+  SFX.good();
+  showEnd(true, s);
+}
+function lose() { G.over = true; SFX.bad(); showEnd(false, 0); }
+function showEnd(won, s) {
+  modalOpen = true; selected = null; shovel = false; refreshCardsLight();
+  const st = G.stats, shots = st.right + st.wrong;
+  document.getElementById("endEyebrow").textContent = G.L.name;
+  document.getElementById("endTitle").textContent = won ? "Khu vườn an toàn!" : "Zombie đã vào nhà!";
+  document.getElementById("endStars").textContent = won ? "★".repeat(s) + "☆".repeat(3 - s) : "☆☆☆";
+  document.getElementById("endMsg").textContent = won
+    ? (s === 3 ? "Không cần dùng máy cắt cỏ nào. Em phân loại số thực rất chắc!" : "Em đã thắng. Lần sau thử không để zombie chạm tới máy cắt cỏ nhé.")
+    : "Xem lại các số dễ nhầm bên dưới rồi thử lại nhé.";
+  const acc = shots ? Math.round(st.right / shots * 100) : 0;
+  const cells = [
+    [`${G.killed}/${G.schedule.length}`, "zombie bị hạ"],
+    [`${acc}%`, "đạn bắn đúng loại"],
+    [String(st.mowers), "máy cắt cỏ đã dùng"],
+  ];
+  if (G.L.quiz) cells.push([`${st.quizRight}/${st.quizRight + st.quizWrong}`, "câu Giáo sư trả lời đúng"]);
+  if (st.riddleRight + st.riddleWrong) cells.push([`${st.riddleRight}/${st.riddleRight + st.riddleWrong}`, "câu giải đố đúng"]);
+  document.getElementById("endStats").innerHTML = cells.map(([b, s2]) => `<div class="stat"><b>${b}</b><span>${s2}</span></div>`).join("");
+  const conf = Object.values(G.confused).sort((a, b) => b.n - a.n).slice(0, 6);
+  document.getElementById("endConfused").innerHTML = conf.length
+    ? `<h3>Những số dễ nhầm</h3><p style="font-size:13px;color:var(--ink-soft);margin:0">Đạn sai loại đã bắn vào các số này:</p><ul class="lst">${conf.map(c =>
+        `<li><span class="num">${c.num.s}</span><span class="chip ${c.num.t === "Q" ? "q" : "i"}">${c.num.t === "Q" ? "ℚ hữu tỉ" : "𝕀 vô tỉ"}</span><span>${c.num.why}</span></li>`).join("")}</ul>`
+    : "";
+  const nb = [...G.notebook.values()];
+  document.getElementById("endNotebook").innerHTML = nb.length
+    ? nb.map(n => `<span class="chip ${n.t === "Q" ? "q" : "i"}" title="${n.why}">${n.s}</span>`).join("")
+    : `<span style="font-size:13px">Chưa hạ được zombie nào.</span>`;
+  const next = document.getElementById("nextBtn");
+  next.hidden = !(won && levelIdx < LEVELS.length - 1);
+  document.getElementById("endOv").hidden = false;
+  document.getElementById("againBtn").focus();
+}
+function hideAll() { for (const id of ["menuOv", "quizOv", "pauseOv", "endOv"]) document.getElementById(id).hidden = true; }
+function showMenu() {
+  hideAll(); paused = true; modalOpen = true; if (G) G.over = true;
+  const box = document.getElementById("levels"); box.innerHTML = "";
+  LEVELS.forEach((L, i) => {
+    const b = document.createElement("button"); b.className = "lv";
+    const s = best[i] || 0;
+    b.innerHTML = `<span class="t">${L.name}</span><span class="d">${L.desc}</span><span class="ex">${L.ex}</span><span class="stars" aria-label="${s} sao">${"★".repeat(s)}${"☆".repeat(3 - s)}</span>`;
+    b.addEventListener("click", () => { SFX.plant(); newGame(i); });
+    box.appendChild(b);
+  });
+  document.getElementById("menuOv").hidden = false;
+}
+function togglePause() {
+  if (!G || G.over || (modalOpen && !paused)) return;
+  if (quizCtx) return;
+  paused = !paused; modalOpen = paused;
+  document.getElementById("pauseOv").hidden = !paused;
+  document.getElementById("pauseBtn").firstChild.textContent = paused ? "Tiếp tục" : "Tạm dừng";
+  if (paused) document.getElementById("resumeBtn").focus();
+}
+document.getElementById("pauseBtn").addEventListener("click", togglePause);
+document.getElementById("resumeBtn").addEventListener("click", togglePause);
+document.getElementById("menuBtn").addEventListener("click", showMenu);
+document.getElementById("toMenuBtn").addEventListener("click", showMenu);
+document.getElementById("againBtn").addEventListener("click", () => newGame(levelIdx));
+document.getElementById("nextBtn").addEventListener("click", () => newGame(Math.min(levelIdx + 1, LEVELS.length - 1)));
+document.getElementById("shovelBtn").addEventListener("click", () => { if (!G || G.over || paused) return; shovel = !shovel; selected = null; refreshCardsLight(); });
+document.getElementById("soundBtn").addEventListener("click", e => {
+  soundOn = !soundOn; e.currentTarget.setAttribute("aria-pressed", String(soundOn));
+  document.getElementById("soundSub").textContent = soundOn ? "đang bật" : "đang tắt";
+});
+
+// hướng dẫn trong menu
+(function buildGuide() {
+  const g = document.getElementById("guide");
+  const rows = [
+    ["sun", "<b>Hoa Mặt Trời</b> (50): tạo nắng. Trồng vài cây ở cột trái ngay đầu màn."],
+    ["peaQ", "<b>Đậu ℚ</b> (100): chỉ bắn hạ zombie mang <b>số hữu tỉ</b>."],
+    ["peaI", "<b>Đậu 𝕀</b> (100): chỉ bắn hạ zombie mang <b>số vô tỉ</b>."],
+    ["nut", "<b>Óc Chó Chắn</b> (50): chặn zombie để đậu có thêm thời gian bắn."],
+  ];
+  for (const [k, txt] of rows) {
+    const d = document.createElement("div");
+    d.innerHTML = `<canvas width="80" height="80" aria-hidden="true"></canvas><span>${txt}</span>`;
+    const c2 = d.querySelector("canvas").getContext("2d"); c2.scale(.8, .8); drawPlant(c2, k, 50, 50, 0);
+    g.appendChild(d);
+  }
+})();
+(function sunIcon() { const c2 = document.getElementById("sunIcon").getContext("2d"); drawSunOrb(c2, 30, 30, 22, 0); })();
+
+// khởi động: vẽ bãi cỏ trống phía sau menu
+function drawBackdrop() {
+  const saved = G; G = null;
+  draw();
+  G = saved;
+}
+renderCards();
+for (const k of ORDER) cardEls[k].classList.add("poor");
+showMenu();
+const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+fontsReady.then(() => { renderCards(); for (const k of ORDER) cardEls[k].classList.add("poor"); });
+function frame(now) {
+  const dt = Math.min(.05, (now - lastTime) / 1000 || 0); lastTime = now;
+  if (G && !paused && !G.over) { update(dt); refreshCardsLight(); }
+  if (G) draw(); else drawBackdrop();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
